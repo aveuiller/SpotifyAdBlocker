@@ -31,8 +31,7 @@ proguard/
 captures/
 
 # Idea Files
-/.idea/workspace.xml
-/.idea/libraries
+/.idea/*
 
 # Build Files
 /app/build/tmp
