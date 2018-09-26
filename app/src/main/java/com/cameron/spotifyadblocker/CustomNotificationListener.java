@@ -63,41 +63,31 @@ public class CustomNotificationListener extends NotificationListenerService {
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
                 StatusBarNotification[] notifications = getActiveNotifications();
-                Notification notification = new Notification();
-                boolean foundNotification = false;
-                if (notifications != null) {
-                    Log.d("DEBUG", "Checking notifications.");
+                if (notifications == null) {
+                    Log.d("DEBUG", "No access to notifications.");
+                    return;
+                }
+                Notification notification = getSpotifyNotification();
+                if (notification == null) {
+                    Log.d("DEBUG", "No spotify in notifications found.");
+                    return;
+                }
 
-                    // Find which notification is Spotify
-                    for (int i = 0; i < notifications.length; ++i) {
-                        String name = notifications[i].getPackageName();
-                        if (name.contains("spotify")) {
-                            Log.d("DEBUG", name);
-                            notification = notifications[i].getNotification();
-                            foundNotification = true;
-                            break;
-                        }
-                    }
-                    // Check if it is an ad
-                    if (foundNotification) {
-                        Bundle extras = notification.extras;
-                        String title = extras.getCharSequence(Notification.EXTRA_TITLE).toString();
-                        if (title != null) {
-                            Log.d("DEBUG", title);
-                            boolean isAdPlaying = blocklist.contains(title);
-                            String s = isAdPlaying? "Ad playing" : "Ad not playing";
-                            Log.d("DEBUG", s);
-                            AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                            if (isAdPlaying && !muted) {
-                                originalVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-                                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, zeroVolume, AudioManager.FLAG_SHOW_UI);
-                                muted = true;
-                            }
-                            else if (!isAdPlaying && muted) {
-                                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, originalVolume, AudioManager.FLAG_SHOW_UI);
-                                muted = false;
-                            }
-                        }
+                // Check if it is an ad
+                String title =  notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString();
+                if (title != null) {
+                    Log.d("DEBUG", title);
+                    boolean isAdPlaying = blocklist.contains(title);
+                    String s = isAdPlaying ? "Ad playing" : "Ad not playing";
+                    Log.d("DEBUG", s);
+                    AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                    if (isAdPlaying && !muted) {
+                        originalVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, zeroVolume, AudioManager.FLAG_SHOW_UI);
+                        muted = true;
+                    } else if (!isAdPlaying && muted) {
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, originalVolume, AudioManager.FLAG_SHOW_UI);
+                        muted = false;
                     }
                 }
             }
@@ -126,8 +116,24 @@ public class CustomNotificationListener extends NotificationListenerService {
     }
 
     @Override
-    public void onNotificationPosted(StatusBarNotification notification) { }
+    public void onNotificationPosted(StatusBarNotification notification) {
+    }
 
     @Override
-    public void onNotificationRemoved(StatusBarNotification notification) { }
+    public void onNotificationRemoved(StatusBarNotification notification) {
+    }
+
+    private Notification getSpotifyNotification() {
+        Notification spotifyNotification = null;
+        StatusBarNotification[] notifications = getActiveNotifications();
+        for (StatusBarNotification notification : notifications) {
+            String name = notification.getPackageName();
+            if (name.contains("spotify")) {
+                Log.d("DEBUG", name);
+                spotifyNotification = notification.getNotification();
+                break;
+            }
+        }
+        return spotifyNotification;
+    }
 }
