@@ -25,15 +25,15 @@
         android:id="@+id/relativeLayout2">
 
         <CheckBox
+            android:id="@+id/checkBox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Enable Blocking"
-            android:id="@+id/checkBox"
-            android:textSize="16dp"
-            android:onClick="onCheckboxClick"
-            android:layout_below="@+id/button"
+            android:layout_below="@+id/notificationaccessButton"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="20dp" />
+            android:layout_marginTop="20dp"
+            android:onClick="onCheckboxClick"
+            android:text="Enable Blocking"
+            android:textSize="16dp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -48,14 +48,14 @@
             android:gravity="center"/>
 
         <Button
+            android:id="@+id/notificationaccessButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/button"
             android:layout_below="@+id/textView"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="23dp"
-            android:text="Notification Access"
-            android:onClick="notificationAccess" />
+            android:onClick="notificationAccess"
+            android:text="Notification Access" />
 
     </RelativeLayout>
 
@@ -97,17 +97,28 @@
         android:layout_alignEnd="@+id/relativeLayout2"
         android:layout_alignStart="@+id/relativeLayout2"
         android:layout_below="@+id/buttonAddFilter"
-        android:text="If you hear an ad, you can add the title to the filter list. Toggle blocking to apply changes."
+        android:text="If you hear an ad, you can add the title to the filter list"
         android:textAlignment="center" />
 
     <Button
-        android:id="@+id/button2"
+        android:id="@+id/viewFilterButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/textView2"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="80dp"
+        android:layout_toStartOf="@+id/buttonAddFilter"
         android:onClick="openAdditionalFilterListDialog"
         android:text="View Your Filters" />
+
+    <Button
+        android:id="@+id/addCurrentAdButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/textView2"
+        android:layout_alignEnd="@+id/viewFilterButton"
+        android:layout_marginTop="15dp"
+        android:layout_marginEnd="6dp"
+        android:onClick="addCurrentAdToFilter"
+        android:text="Add current ad" />
 
 </RelativeLayout>

@@ -4,6 +4,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -27,30 +28,34 @@ public class MainActivity extends AppCompatActivity implements ViewAdditionalFil
     }
 
     @Override
-    protected void onResume()
-    {
+    protected void onResume() {
         super.onResume();
         restoreCheckboxState();
     }
 
-    private void restoreCheckboxState()
-    {
+    private void restoreCheckboxState() {
         enabled = false;
         SharedPreferences preferences = getSharedPreferences(getString(R.string.saved_enabled), MODE_PRIVATE);
         enabled = preferences.getBoolean(getString(R.string.saved_enabled), enabled);
         CheckBox enabledCheckbox = (CheckBox) findViewById(R.id.checkBox);
         enabledCheckbox.setChecked(enabled);
-        if(enabled && !CustomNotificationListener.isRunning())
+        if (enabled && !CustomNotificationListener.isRunning())
             startService(serviceIntent);
     }
 
     public void onCheckboxClick(View view) {
+        if(!NotificationManagerCompat.getEnabledListenerPackages(this).contains("com.cameron.spotifyadblocker")) {
+            Toast.makeText(this, "Notification access denied", Toast.LENGTH_LONG).show();
+            requestNotificationAccess();
+            return;
+        }
+
         if (enabled) {
             Log.d("DEBUG", "Stopping Service");
             CustomNotificationListener.killService();
             stopService(serviceIntent);
             enabled = false;
-        } else if (!CustomNotificationListener.isRunning()){
+        } else if (!CustomNotificationListener.isRunning()) {
             startService(serviceIntent);
             enabled = true;
         }
@@ -60,17 +65,34 @@ public class MainActivity extends AppCompatActivity implements ViewAdditionalFil
     }
 
     public void notificationAccess(View view) {
+        requestNotificationAccess();
+    }
+
+    public void requestNotificationAccess(){
         startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
     }
 
     public void addAdditionalFilter(View view) {
         SharedPreferences.Editor preferencesEditor = getSharedPreferences(getString(R.string.saved_filters), MODE_PRIVATE).edit();
-        EditText et = (EditText)view.getRootView().findViewById(R.id.editTextAddFilter);
+        EditText et = view.getRootView().findViewById(R.id.editTextAddFilter);
         String newFilter = et.getText().toString();
         et.setText("");
-        preferencesEditor.putString("filter_" + newFilter, newFilter);
-        preferencesEditor.apply();
-        Toast.makeText(this, "Added filter: " + newFilter, Toast.LENGTH_SHORT).show();
+        if (!newFilter.isEmpty()){
+            preferencesEditor.putString("filter_" + newFilter, newFilter);
+            preferencesEditor.apply();
+            Toast.makeText(this, "Added filter: " + newFilter, Toast.LENGTH_SHORT).show();
+            // reload list by restarting service
+            if (enabled) {
+                onCheckboxClick(view);
+                onCheckboxClick(view);
+            }
+        }
+    }
+
+    public void addCurrentAdToFilter(View view) {
+        EditText et = findViewById(R.id.editTextAddFilter);
+        et.setText(CustomNotificationListener.getCurrentTitle());
+        this.addAdditionalFilter(findViewById(R.id.buttonAddFilter));
     }
 
     public void openAdditionalFilterListDialog(View view) {

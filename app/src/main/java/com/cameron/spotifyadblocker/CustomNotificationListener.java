@@ -31,7 +31,9 @@ public class CustomNotificationListener extends NotificationListenerService {
     private int zeroVolume;
     private static Timer timer;
     private static boolean running;
+    private static String currentTitle;
     private HashSet<String> blocklist;
+
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -74,12 +76,11 @@ public class CustomNotificationListener extends NotificationListenerService {
                 }
 
                 // Check if it is an ad
-                String title =  notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString();
-                if (title != null) {
-                    Log.d("DEBUG", title);
-                    boolean isAdPlaying = blocklist.contains(title);
-                    String s = isAdPlaying ? "Ad playing" : "Ad not playing";
-                    Log.d("DEBUG", s);
+                currentTitle =  notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString();
+                if (currentTitle != null) {
+                    Log.d("DEBUG", currentTitle);
+                    boolean isAdPlaying = blocklist.contains(currentTitle);
+                    Log.d("DEBUG", isAdPlaying ? "Ad playing" : "Ad not playing");
                     AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                     if (isAdPlaying && !muted) {
                         originalVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
@@ -121,6 +122,10 @@ public class CustomNotificationListener extends NotificationListenerService {
 
     @Override
     public void onNotificationRemoved(StatusBarNotification notification) {
+    }
+
+    public static String getCurrentTitle(){
+        return currentTitle == null ? "" : currentTitle;
     }
 
     private Notification getSpotifyNotification() {
