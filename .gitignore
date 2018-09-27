@@ -32,6 +32,7 @@ captures/
 
 # Idea Files
 /.idea/*
+*.iml
 
 # Build Files
 /app/build/tmp
