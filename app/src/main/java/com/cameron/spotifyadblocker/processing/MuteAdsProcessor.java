@@ -12,6 +12,7 @@ import java.util.Objects;
  * Handle the phone reaction on ad detected.
  */
 public class MuteAdsProcessor {
+    private static final String TAG = "MuteAdsProcessor";
     private static final int ZERO_VOLUME = 0;
 
     private final AudioManager audioManager;
@@ -36,7 +37,7 @@ public class MuteAdsProcessor {
      */
     public void handleTitle(String title) {
         boolean isAdPlaying = blocklist.isBlocked(title);
-        Log.d("MuteAdsProcessor", isAdPlaying ? "Ad playing" : "Ad not playing");
+        Log.i(TAG, String.format("Checking track %s (is ad: %s)", title, isAdPlaying));
         if (isAdPlaying) {
             onAdDetected();
         } else {

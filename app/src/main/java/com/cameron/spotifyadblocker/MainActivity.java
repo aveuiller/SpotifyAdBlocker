@@ -19,6 +19,7 @@ import com.cameron.spotifyadblocker.detection.CustomNotificationListener;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements ViewAdditionalFiltersDialogFragment.ViewAdditionalFiltersDialogListener {
+    private static final String TAG = "MainActivity";
     private static final String OWN_PACKAGE = "com.cameron.spotifyadblocker";
     private boolean enabled;
     private Intent serviceIntent;
@@ -58,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements ViewAdditionalFil
         }
 
         if (enabled) {
-            Log.d("DEBUG", "Stopping Service");
+            Log.d(TAG, "Stopping Service");
             CustomNotificationListener.killService();
             stopService(serviceIntent);
             enabled = false;

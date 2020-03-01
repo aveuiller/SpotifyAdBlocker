@@ -17,6 +17,7 @@ import java.util.TimerTask;
  */
 // Note: Rename this class during debugging (Refactor->Rename for ease). Android caching may prevent the service from binding on a previously-tested device.
 public class CustomNotificationListener extends NotificationListenerService {
+    private static final String TAG = "NotificationListener";
     private static String currentTitle;
     private static Timer timer;
     private static boolean running;
@@ -37,7 +38,7 @@ public class CustomNotificationListener extends NotificationListenerService {
             public void run() {
                 StatusBarNotification[] notifications = getActiveNotifications();
                 if (notifications == null) {
-                    Log.d("DEBUG", "No access to notifications.");
+                    Log.d(TAG, "No access to notifications.");
                     return;
                 }
                 Notification notification = getSpotifyNotification();
@@ -49,7 +50,7 @@ public class CustomNotificationListener extends NotificationListenerService {
                 // Retrieve title and handle it on the add processor.
                 CharSequence title = notification.extras.getCharSequence(Notification.EXTRA_TITLE);
                 currentTitle = title == null ? "" : title.toString();
-                Log.d("DEBUG", currentTitle);
+                Log.d(TAG, currentTitle);
                 adsProcessor.handleTitle(currentTitle);
             }
         }, 10, 250);
@@ -67,12 +68,12 @@ public class CustomNotificationListener extends NotificationListenerService {
 
     @Override
     public void onDestroy() {
-        Log.d("DEBUG", "Destroying Service");
+        Log.d(TAG, "Destroying Service");
         try {
             killService();
-            Log.d("DEBUG", "Timer canceled.");
+            Log.d(TAG, "Timer canceled.");
         } catch (NullPointerException ex) {
-            Log.w("WARN", "NullPointer encountered while cancelling timer.");
+            Log.w(TAG, "NullPointer encountered while cancelling timer.");
         }
     }
 
