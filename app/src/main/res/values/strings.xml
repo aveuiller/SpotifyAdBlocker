@@ -3,4 +3,9 @@
     <string name="title_activity_main2">Main2Activity</string>
     <string name="saved_enabled">enabled</string>
     <string name="saved_filters">additionalFilters</string>
+    <string name="method_selection">Select the listener method:</string>
+    <string name="enable_blocking">Enable Blocking</string>
+    <string name="notification_access_settings">Notification Access</string>
+    <string name="notification_requirement_notice">This app requires notification access which is used to tell if an ad is playing. To enable, click the button below and turn it on for this app.</string>
+    <string name="broadcast_requirement_notice">This app requires the Spotify app to broadcast its currently played music. To set it up, click the button below and check `Device Broadcast Status`</string>
 </resources>

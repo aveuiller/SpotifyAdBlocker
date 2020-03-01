@@ -1,29 +1,34 @@
 package com.cameron.spotifyadblocker;
 
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.cameron.spotifyadblocker.detection.Blocklist;
 import com.cameron.spotifyadblocker.detection.CustomNotificationListener;
+import com.cameron.spotifyadblocker.detection.DetectionMethods;
+import com.cameron.spotifyadblocker.detection.DeviceAccessException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements ViewAdditionalFiltersDialogFragment.ViewAdditionalFiltersDialogListener {
     private static final String TAG = "MainActivity";
-    private static final String OWN_PACKAGE = "com.cameron.spotifyadblocker";
     private boolean enabled;
-    private Intent serviceIntent;
     private Blocklist blocklist;
+    private DetectionMethods method;
+    private Spinner methodSpinner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,8 +36,46 @@ public class MainActivity extends AppCompatActivity implements ViewAdditionalFil
         setContentView(R.layout.activity_main);
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
-        serviceIntent = new Intent(this, CustomNotificationListener.class);
         blocklist = new Blocklist(this);
+
+        method = DetectionMethods.LISTENER;
+        initSpinner();
+    }
+
+    private void initSpinner() {
+        methodSpinner = findViewById(R.id.spinner_method_selection);
+
+        final List<String> methodNames = new ArrayList<>();
+        for (DetectionMethods available : DetectionMethods.values()) {
+            methodNames.add(available.name());
+        }
+
+        methodSpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, methodNames));
+        methodSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                String name;
+                try {
+                    name = methodNames.get(i);
+                } catch (IndexOutOfBoundsException e) {
+                    Log.w(TAG, String.format("Unable to retrieve name for index %s", i), e);
+                    return;
+                }
+
+                try {
+                    method = DetectionMethods.valueOf(name);
+                } catch (IllegalArgumentException e) {
+                    Log.w(TAG, String.format("Unable to find detection method %s", name), e);
+                }
+
+                TextView notice = findViewById(R.id.requirement_notice);
+                notice.setText(method.getNoticeId());
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+            }
+        });
     }
 
     @Override
@@ -41,43 +84,67 @@ public class MainActivity extends AppCompatActivity implements ViewAdditionalFil
         restoreCheckboxState();
     }
 
-    private void restoreCheckboxState() {
-        enabled = false;
-        SharedPreferences preferences = getSharedPreferences(getString(R.string.saved_enabled), MODE_PRIVATE);
-        enabled = preferences.getBoolean(getString(R.string.saved_enabled), enabled);
-        CheckBox enabledCheckbox = (CheckBox) findViewById(R.id.checkBox);
-        enabledCheckbox.setChecked(enabled);
-        if (enabled && !CustomNotificationListener.isRunning())
-            startService(serviceIntent);
-    }
-
-    public void onCheckboxClick(View view) {
-        if (!NotificationManagerCompat.getEnabledListenerPackages(this).contains(OWN_PACKAGE)) {
-            Toast.makeText(this, "Notification access denied", Toast.LENGTH_LONG).show();
-            requestNotificationAccess();
-            return;
-        }
-
-        if (enabled) {
-            Log.d(TAG, "Stopping Service");
-            CustomNotificationListener.killService();
-            stopService(serviceIntent);
-            enabled = false;
-        } else if (!CustomNotificationListener.isRunning()) {
-            startService(serviceIntent);
-            enabled = true;
-        }
-        SharedPreferences.Editor preferencesEditor = getSharedPreferences(getString(R.string.saved_enabled), MODE_PRIVATE).edit();
+    private void setState(boolean enabled) {
+        this.enabled = enabled;
+        SharedPreferences.Editor preferencesEditor = getEnablingPreferences().edit();
         preferencesEditor.putBoolean(getString(R.string.saved_enabled), enabled);
         preferencesEditor.apply();
     }
 
-    public void notificationAccess(View view) {
-        requestNotificationAccess();
+    private boolean getState() {
+        SharedPreferences preferences = getEnablingPreferences();
+        return preferences.getBoolean(getString(R.string.saved_enabled), false);
     }
 
-    public void requestNotificationAccess() {
-        startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
+    private SharedPreferences getEnablingPreferences() {
+        return getSharedPreferences(getString(R.string.saved_enabled), MODE_PRIVATE);
+    }
+
+    private void restoreCheckboxState() {
+        enabled = getState();
+        CheckBox enabledCheckbox = (CheckBox) findViewById(R.id.checkBox);
+        enabledCheckbox.setChecked(enabled);
+        if (enabled) {
+            runServiceWithAccess(method);
+        }
+    }
+
+    public void onCheckboxClick(View view) {
+        Log.d(TAG, String.format("Enabled? %s", enabled));
+        if (enabled) {
+            Log.d(TAG, "Stopping Service");
+            method.stop(this);
+            setState(false);
+        } else {
+            Log.d(TAG, "Starting Service");
+            runServiceWithAccess(method);
+        }
+        // Disable spinner if service is started.
+        methodSpinner.setEnabled(!getState());
+    }
+
+    /**
+     * Try to start a service listening to the Spotify notifications, handling permission
+     * accesses if necessary.
+     *
+     * @param method The {@link DetectionMethods} to use as service.
+     */
+    private void runServiceWithAccess(DetectionMethods method) {
+        try {
+            method.start(this);
+            setState(true);
+        } catch (DeviceAccessException e) {
+            Toast.makeText(this, "Access denied", Toast.LENGTH_LONG).show();
+            requestNotificationAccess(method);
+        }
+    }
+
+    public void notificationAccess(View view) {
+        requestNotificationAccess(method);
+    }
+
+    public void requestNotificationAccess(DetectionMethods method) {
+        method.requestAccess(this);
     }
 
     public void addAdditionalFilter(View view) {
