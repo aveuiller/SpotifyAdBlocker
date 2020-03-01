@@ -50,6 +50,7 @@ public class MuteAdsProcessor {
     private void onAdDetected() {
         if (!muted) {
             originalVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+            Log.i(TAG, String.format("Setting sound from %s to %s", originalVolume, ZERO_VOLUME));
             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, ZERO_VOLUME, AudioManager.FLAG_SHOW_UI);
             muted = true;
         }
@@ -60,6 +61,7 @@ public class MuteAdsProcessor {
      */
     private void onAdEnded() {
         if (muted) {
+            Log.i(TAG, String.format("Setting sound from %s to %s", ZERO_VOLUME, originalVolume));
             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, originalVolume, AudioManager.FLAG_SHOW_UI);
             muted = false;
         }
