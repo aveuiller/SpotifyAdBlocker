@@ -12,11 +12,17 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
-import java.util.Collection;
+
+import com.cameron.spotifyadblocker.detection.Blocklist;
+import com.cameron.spotifyadblocker.detection.CustomNotificationListener;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements ViewAdditionalFiltersDialogFragment.ViewAdditionalFiltersDialogListener {
+    private static final String OWN_PACKAGE = "com.cameron.spotifyadblocker";
     private boolean enabled;
     private Intent serviceIntent;
+    private Blocklist blocklist;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements ViewAdditionalFil
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
         serviceIntent = new Intent(this, CustomNotificationListener.class);
+        blocklist = new Blocklist(this);
     }
 
     @Override
@@ -44,7 +51,7 @@ public class MainActivity extends AppCompatActivity implements ViewAdditionalFil
     }
 
     public void onCheckboxClick(View view) {
-        if(!NotificationManagerCompat.getEnabledListenerPackages(this).contains("com.cameron.spotifyadblocker")) {
+        if (!NotificationManagerCompat.getEnabledListenerPackages(this).contains(OWN_PACKAGE)) {
             Toast.makeText(this, "Notification access denied", Toast.LENGTH_LONG).show();
             requestNotificationAccess();
             return;
@@ -68,18 +75,17 @@ public class MainActivity extends AppCompatActivity implements ViewAdditionalFil
         requestNotificationAccess();
     }
 
-    public void requestNotificationAccess(){
+    public void requestNotificationAccess() {
         startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
     }
 
     public void addAdditionalFilter(View view) {
-        SharedPreferences.Editor preferencesEditor = getSharedPreferences(getString(R.string.saved_filters), MODE_PRIVATE).edit();
         EditText et = view.getRootView().findViewById(R.id.editTextAddFilter);
         String newFilter = et.getText().toString();
         et.setText("");
-        if (!newFilter.isEmpty()){
-            preferencesEditor.putString("filter_" + newFilter, newFilter);
-            preferencesEditor.apply();
+        blocklist.addUserDefined(newFilter);
+        // Only restart if a non-empty filter is added.
+        if (!newFilter.isEmpty()) {
             Toast.makeText(this, "Added filter: " + newFilter, Toast.LENGTH_SHORT).show();
             // reload list by restarting service
             if (enabled) {
@@ -96,20 +102,16 @@ public class MainActivity extends AppCompatActivity implements ViewAdditionalFil
     }
 
     public void openAdditionalFilterListDialog(View view) {
-        SharedPreferences preferences = getSharedPreferences(getString(R.string.saved_filters), MODE_PRIVATE);
-        Collection<? extends String> additionalFilters = (Collection<String>) preferences.getAll().values();
+        List<String> additionalFilters = blocklist.fetchUserDefined();
         ViewAdditionalFiltersDialogFragment viewAdditionalFiltersDialogFragment = ViewAdditionalFiltersDialogFragment.newInstance(additionalFilters.toArray(new String[additionalFilters.size()]));
         viewAdditionalFiltersDialogFragment.show(getFragmentManager(), "additionalFiltersDialog");
     }
 
     @Override
     public void onFilterClick(DialogInterface dialogInterface, int i) {
-        SharedPreferences.Editor preferencesEditor = getSharedPreferences(getString(R.string.saved_filters), MODE_PRIVATE).edit();
-        SharedPreferences preferences = getSharedPreferences(getString(R.string.saved_filters), MODE_PRIVATE);
-        Collection<String> additionalFilters = (Collection<String>) preferences.getAll().values();
-        String filterToRemove = additionalFilters.toArray(new String[additionalFilters.size()])[i];
-        preferencesEditor.remove("filter_" + filterToRemove);
+        List<String> additionalFilters = blocklist.fetchUserDefined();
+        String filterToRemove = additionalFilters.get(i);
+        blocklist.removeUserDefined(filterToRemove);
         Toast.makeText(this, "Deleted filter: " + filterToRemove, Toast.LENGTH_SHORT).show();
-        preferencesEditor.apply();
     }
 }
